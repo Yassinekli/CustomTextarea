@@ -1,0 +1,49 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta http-equiv="X-UA-Compatible" content="ie=edge">
+    <title>Custom Textarea</title>
+    <style>
+        *{box-sizing: border-box;}
+        .container{
+            margin-top: 10px;
+            width: 100%;
+            border: 1px solid #6bcf8c;
+            border-radius: 5px;
+            padding: 5px;
+            font-family: calibri;
+            position: relative;}
+        .placeholder{
+            position: absolute;
+            color: #929292;
+            z-index: -100;
+            top: 0;
+            transform: translateY(20%);}
+        .textarea { display: block; min-height: 20px; overflow-wrap: break-word;}
+        .textarea:focus { outline: none; }
+        .emoji{ margin: 0 1px;}
+    </style>
+</head>
+<body>
+    
+    <!-- Without emoji -->
+    <div class="container">
+        <span id="textarea" class="textarea" contenteditable="true"><div><br></div></span>
+        <!-- <span id="placeholder" class="placeholder">Type a message...</span> -->
+    </div>
+
+
+    <!-- With emoji -->
+    <div class="container">
+        <span id="textarea2" class="textarea" contenteditable="true"><div><img class="emoji" src="emojis/smile.png" width="15px"><img class="emoji" src="emojis/smile.png" width="15px"><img class="emoji" src="emojis/smile.png" width="15px"></div></span>
+    </div>
+
+
+
+    
+    <!-- Script -->
+    <script src="script.js"></script>
+</body>
+</html>
