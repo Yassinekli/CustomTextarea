@@ -1,7 +1,7 @@
 
 /*********************************
-     TODO-List 
-    1 - Create breaking line code. ✓ 
+     TODO 
+    1 - Create breaking line code.
     2 - Code the Delete and Backspace tap.
     3 - Code the Space tap.
     4 - Code the placeholder.
@@ -12,8 +12,8 @@
      #Issues 
     - Unspected behaviour : Firefox selects also the textarea container while selecting the emojis
     - Unspected behaviour : Firefox add a BR element when taping space key 
-    - Unspected behaviour : Chrome delete the first line container child when I delete the only letter or emoji left 
-                            from the line container.
+    - Unspected behaviour : Chrome delete the first line container child when I delete the only letter or emoji left from the line container.
+    - See the issue in the function deleteSelectedContent()
 ***********************************/
 
 ///////////////////////////////////////////
@@ -107,8 +107,9 @@ function newLine($this) {
         endNode = selection.focusNode,
         newLine = document.createElement('div');
 
-    // ---------- Some separated functions ------------
-
+    //////////////////////////////////////////////////////////// Some separated functions
+    // NOTE  : Some functions will be usefull for other tasks.
+    
     // This function is the one which break new line.
     function breakNewLine() {
         if(endNode.nodeType == Node.TEXT_NODE) {
@@ -237,19 +238,71 @@ function newLine($this) {
 
     // Delete the selected content.
     function deleteSelectedContent(node, startOffSet, endOffSet) {
+        let lineContainer = node;
+        
         if(startOffSet > endOffSet) {
             let tmp = endOffSet;
             endOffSet = startOffSet;
             startOffSet = tmp;
         }
+
+        if(node.nodeType == Node.TEXT_NODE)
+        { 
+            lineContainer = node.parentNode;
+            if(startOffSet == 0 && node.textContent.length == endOffSet)
+                node.remove();
+            else
+            {
+                range.setStart(node, startOffSet);
+                range.setEnd(node, endOffSet);
+                range.deleteContents();
+            }
+            if(lineContainer.childNodes.length == 0)
+                lineContainer.appendChild(document.createElement('br'));
+            return;
+        }
+        
         range.setStart(node, startOffSet);
         range.setEnd(node, endOffSet);
-        if(node.nodeType == Node.TEXT_NODE && startOffSet == 0 && node.textContent.length == endOffSet)
-        { node.remove(); return; }
         range.deleteContents();
+
+        if(lineContainer.childNodes.length == 0)
+            lineContainer.appendChild(document.createElement('br'));
     }
 
-    //-------------  Process of breaking new line start here  ------------
+    // Get the state of the anchorNode and focusNode
+    // There are 4 states
+    // return 1 : anchorNode & focusNode both have nodeType TEXT_NODE.
+    // return 2 : anchorNode & focusNode both are line container.
+    // return 3 : anchorNode has TEXT_NODE type, but focusNode is a line container.
+    // return 4 : anchorNode is a line container, but focusNode has TEXT_NODE type.
+    function getStateOfBreakingLine(anchorNode, focusNode) {
+        if(anchorNode.nodeType == Node.TEXT_NODE && focusNode.nodeType == Node.TEXT_NODE)
+            return 1;
+        if(anchorNode.nodeType == Node.TEXT_NODE && focusNode.nodeType != Node.TEXT_NODE)
+            return 2;
+        if(anchorNode.nodeType != Node.TEXT_NODE && focusNode.nodeType == Node.TEXT_NODE)
+            return 3;
+        return 4;
+    }
+
+    // This function will help me to deside either go left or right to delete the selected content. 
+    function goLeftOrRight(OnOff, lineContainerChilds, anchorNode, focusNode) {
+        if(OnOff == 0){
+            for (let i = 0; i < lineContainerChilds.length; i++) {
+                if(lineContainerChilds.item(i) === anchorNode) return 1;
+                if(lineContainerChilds.item(i) === focusNode) return -1;
+            }
+        }
+        if(OnOff == 1){
+            for (let i = 0; i < lineContainerChilds.length; i++)
+                if(lineContainerChilds.item(i) == anchorNode)
+                    return i;
+        }
+    }
+
+
+    //////////////////////////////////////////////////////////////  Process of breaking new line start here
     // The mission start from multiple conditions before breaking new line
     // the cause of that is to detect which state the user is to break a new line
     if(startNode.nodeType === Node.TEXT_NODE)
@@ -273,83 +326,62 @@ function newLine($this) {
         else
         {
             log('----- Anchor & Caret are [NOT] in the same node -----');
+            
             let lineContainerChilds;
-            if(startNode.nodeType == Node.TEXT_NODE && endNode.nodeType == Node.TEXT_NODE)
-            {
-                log('A');
-                let x;
-                lineContainerChilds = startNode.parentNode.childNodes;
-                for (let i = 0; i < lineContainerChilds.length; i++) {
-                    if(lineContainerChilds.item(i) === startNode)
-                    { x = 1; break;}
-                    if(lineContainerChilds.item(i) === endNode)
-                    { x = -1; break;}
-                }
-
-                switch (x) {
-                    case 1:
-                        // TODO  : redundant code
-                        while (endNode.previousSibling != startNode)
-                            endNode.previousSibling.remove();
-                        deleteSelectedContent(startNode, startAt, startNode.textContent.length);
-                        deleteSelectedContent(endNode, 0, endAt);
-                        resetSelection();
-                        breakNewLine();
-                        break;
-                    case -1:
-                        // TODO  : redundant code
-                        while (startNode.previousSibling != endNode)
-                            startNode.previousSibling.remove();
-                        deleteSelectedContent(startNode, 0, startAt);
-                        deleteSelectedContent(endNode, endAt, endNode.textContent.length);
-                        resetSelection();
-                        breakNewLine();
-                        break;
-                }
-            }
-            else
-            {
-                if(startNode.nodeType == Node.TEXT_NODE && endNode.nodeType !== Node.TEXT_NODE)
-                {
-                    log('B')
-                    lineContainerChilds = startNode.parentNode.childNodes;
-                    let i = 0;
-                    for (; i < lineContainerChilds.length; i++)
-                        if(lineContainerChilds.item(i) == startNode)
-                            break;
-                    if(i < endAt)
+            
+            switch (getStateOfBreakingLine(startNode, endNode)) {
+                case 1:
                     {
-                        // TODO  : redundant code
-                        for (let j = i+1; j < endAt; j++)
-                            startNode.nextSibling.remove();
-                        deleteSelectedContent(startNode, startAt, startNode.textContent.length);
-                        resetSelection();
-                        breakNewLine();
-                    }
-                    else
-                    {
-                        // TODO  : redundant code 
-                        for (let j = i; j > endAt; j--)
-                            startNode.previousSibling.remove();
-                        deleteSelectedContent(startNode, 0, startAt);
-                        resetSelection();
-                        breakNewLine();
-                    }
-                }
-                else
-                {
-                    if(startNode.nodeType !== Node.TEXT_NODE && endNode.nodeType == Node.TEXT_NODE)
-                    {
-                        log('C')
-                        lineContainerChilds = endNode.parentNode.childNodes;
-                        let i = 0;
-                        for (; i < lineContainerChilds.length; i++)
-                            if(lineContainerChilds.item(i) == endNode)
+                        lineContainerChilds = startNode.parentNode.childNodes;
+                        switch(goLeftOrRight(0, lineContainerChilds, startNode, endNode)){
+                            case 1:
+                                while(startNode.nextSibling != endNode)
+                                    startNode.nextSibling.remove();
+                                    deleteSelectedContent(startNode, startAt, startNode.textContent.length);
+                                    deleteSelectedContent(endNode, 0, endAt);
+                                    resetSelection();
+                                    breakNewLine();
+                                    break;
+                            case -1:
+                                while(endNode.nextSibling != startNode)
+                                    endNode.nextSibling.remove();
+                                deleteSelectedContent(startNode, 0, startAt);
+                                deleteSelectedContent(endNode, endAt, endNode.textContent.length);
+                                resetSelection();
+                                breakNewLine();
                                 break;
-                        if(i < startAt)
+                        }
+                    }
+                    break;
+                case 2:
+                    {
+                        lineContainerChilds = startNode.parentNode.childNodes;
+                        let x = goLeftOrRight(1, lineContainerChilds, startNode);
+                        if(x < endAt)
                         {
-                            // TODO  : redundant code
-                            for (let j = i+1; j < startAt; j++)
+                            for (let j = x+1; j < endAt; j++)
+                                startNode.nextSibling.remove();
+                            deleteSelectedContent(startNode, startAt, startNode.textContent.length);
+                            resetSelection();
+                            breakNewLine();
+                        }
+                        else
+                        {
+                            for (let j = x; j > endAt; j--)
+                                startNode.previousSibling.remove();
+                            deleteSelectedContent(startNode, 0, startAt);
+                            resetSelection();
+                            breakNewLine();
+                        }
+                    }
+                    break;
+                case 3:
+                    {
+                        lineContainerChilds = endNode.parentNode.childNodes;
+                        let x = goLeftOrRight(1, lineContainerChilds, endNode);
+                        if(x < startAt)
+                        {
+                            for (let j = x+1; j < startAt; j++)
                                 endNode.nextSibling.remove();
                             deleteSelectedContent(endNode, endAt, endNode.textContent.length);
                             resetSelection();
@@ -357,21 +389,57 @@ function newLine($this) {
                         }
                         else
                         {
-                            // TODO  : redundant code
-                            for (let j = i; j > startAt; j--)
+                            for (let j = x; j > startAt; j--)
                                 endNode.previousSibling.remove();
                             deleteSelectedContent(endNode, 0, endAt);
                             resetSelection();
                             breakNewLine();
                         }
                     }
-                }
+                    break;
             }
-           
         }
     }
     else
     {
         log('----- Multi line containers selected -----');
+
+        if(goLeftOrRight(0, $this.childNodes, startNode, endNode) == 1) {
+                log('1')
+
+                while (startNode.nextSibling !== endNode)
+                    startNode.nextSibling.remove();
+                
+                startNode = selection.anchorNode;
+                endNode = selection.focusNode;
+
+                if(startNode.nodeType == Node.TEXT_NODE) {
+                    while(startNode.nextSibling)
+                        startNode.nextSibling.remove();
+                    deleteSelectedContent(startNode, startAt, startNode.textContent.length);
+                }
+                else
+                    deleteSelectedContent(startNode, startAt, startNode.childNodes.length);
+
+                let lineContainer = endNode;
+
+                if(endNode.nodeType == Node.TEXT_NODE){
+                    while(endNode.previousSibling)
+                        endNode.previousSibling.remove();
+                    lineContainer = endNode.parentNode;
+                }
+
+                deleteSelectedContent(endNode, 0, endAt);
+
+                if(lineContainer.firstChild.nodeType == Node.TEXT_NODE)
+                    selection.setPosition(lineContainer.firstChild, 0);
+                else
+                    selection.setPosition(lineContainer, 0);
+                return;
+            }
+            
+            if(goLeftOrRight(0, $this.childNodes, startNode, endNode) == -1) {
+                log('-1')
+            }
     }
 }
