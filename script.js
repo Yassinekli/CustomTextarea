@@ -112,7 +112,7 @@ function newLine($this) {
     // This function is the one which break new line.
     function breakNewLine() {
         let newLine = document.createElement('div');
-
+        
         if(endNode.nodeType == Node.TEXT_NODE) {
             // RESUME 
             // This condition works for Firefox and browsers that the target text nodes as first child.
@@ -270,39 +270,40 @@ function newLine($this) {
         if(lineContainer.childNodes.length == 0)
             lineContainer.appendChild(document.createElement('br'));
     }
-
-    // Get the state of the anchorNode and focusNode
-    // There are 4 states
-    // return 1 : anchorNode & focusNode both have nodeType TEXT_NODE.
-    // return 2 : anchorNode & focusNode both are line container.
-    // return 3 : anchorNode has TEXT_NODE type, but focusNode is a line container.
-    // return 4 : anchorNode is a line container, but focusNode has TEXT_NODE type.
-    function getStateOfBreakingLine(anchorNode, focusNode) {
-        if(anchorNode.nodeType == Node.TEXT_NODE && focusNode.nodeType == Node.TEXT_NODE)
-            return 1;
-        if(anchorNode.nodeType == Node.TEXT_NODE && focusNode.nodeType != Node.TEXT_NODE)
-            return 2;
-        if(anchorNode.nodeType != Node.TEXT_NODE && focusNode.nodeType == Node.TEXT_NODE)
-            return 3;
-        return 4;
+     
+    function getParentNode(node) {
+        if(node.nodeType == Node.TEXT_NODE)
+            return node.parentNode;
+        return node;
     }
 
-    // This function will help me to deside either go left or right to delete the selected content. 
-    function goLeftOrRight(OnOff, lineContainerChilds, anchorNode, focusNode) {
-        if(OnOff == 0){
-            for (let i = 0; i < lineContainerChilds.length; i++) {
-                if(lineContainerChilds.item(i) === anchorNode) return 1;
-                if(lineContainerChilds.item(i) === focusNode) return -1;
-            }
-        }
-        if(OnOff == 1){
-            for (let i = 0; i < lineContainerChilds.length; i++)
-                if(lineContainerChilds.item(i) == anchorNode)
-                    return i;
+    function firstNode(lineContainerChilds, anchorNode, focusNode) {
+        for (let i = 0; i < lineContainerChilds.length; i++) {
+            if(lineContainerChilds.item(i) === anchorNode) return Object.create(null, {node: {value:anchorNode}, index: {value:i}});
+            if(lineContainerChilds.item(i) === focusNode) return Object.create(null, {node: {value:focusNode}, index: {value:i}});
         }
     }
 
+    function secondNode(node) {
+        if(node == startNode)
+        {
+            node.startAt = startAt;
+            endNode.startAt = 0;
+            endNode.endAt = endAt;
+            return endNode;
+        }
+        node.startAt = endAt;
+        startNode.startAt = 0;
+        startNode.endAt = startAt;
+        return startNode;
+    }
+
+    
+
+    
+    //////////////////////////////////////////////////////////////
     //////////////////////////////////////////////////////////////  Process of breaking new line start here
+    //////////////////////////////////////////////////////////////
     // The mission start from multiple conditions before breaking new line
     // the cause of that is to detect which state the user is to break a new line
     if(startNode.nodeType === Node.TEXT_NODE)
@@ -326,75 +327,37 @@ function newLine($this) {
         else
         {
             log('----- Anchor & Caret are [NOT] in the same node -----');
-            let lineContainerChilds;
-            switch (getStateOfBreakingLine(startNode, endNode)) {
-                case 1:
-                    {
-                        lineContainerChilds = startNode.parentNode.childNodes;
-                        switch(goLeftOrRight(0, lineContainerChilds, startNode, endNode)){
-                            case 1:
-                                while(startNode.nextSibling != endNode)
-                                    startNode.nextSibling.remove();
-                                    deleteSelectedContent(startNode, startAt, startNode.textContent.length);
-                                    deleteSelectedContent(endNode, 0, endAt);
-                                    resetSelection();
-                                    breakNewLine();
-                                    break;
-                            case -1:
-                                while(endNode.nextSibling != startNode)
-                                    endNode.nextSibling.remove();
-                                deleteSelectedContent(startNode, 0, startAt);
-                                deleteSelectedContent(endNode, endAt, endNode.textContent.length);
-                                resetSelection();
-                                breakNewLine();
-                                break;
-                        }
-                    }
-                    break;
-                case 2:
-                    {
-                        lineContainerChilds = startNode.parentNode.childNodes;
-                        let x = goLeftOrRight(1, lineContainerChilds, startNode);
-                        if(x < endAt)
-                        {
-                            for (let j = x+1; j < endAt; j++)
-                                startNode.nextSibling.remove();
-                            deleteSelectedContent(startNode, startAt, startNode.textContent.length);
-                            resetSelection();
-                            breakNewLine();
-                        }
-                        else
-                        {
-                            for (let j = x; j > endAt; j--)
-                                startNode.previousSibling.remove();
-                            deleteSelectedContent(startNode, 0, startAt);
-                            resetSelection();
-                            breakNewLine();
-                        }
-                    }
-                    break;
-                case 3:
-                    {
-                        lineContainerChilds = endNode.parentNode.childNodes;
-                        let x = goLeftOrRight(1, lineContainerChilds, endNode);
-                        if(x < startAt)
-                        {
-                            for (let j = x+1; j < startAt; j++)
-                                endNode.nextSibling.remove();
-                            deleteSelectedContent(endNode, endAt, endNode.textContent.length);
-                            resetSelection();
-                            breakNewLine();
-                        }
-                        else
-                        {
-                            for (let j = x; j > startAt; j--)
-                                endNode.previousSibling.remove();
-                            deleteSelectedContent(endNode, 0, endAt);
-                            resetSelection();
-                            breakNewLine();
-                        }
-                    }
-                    break;
+            
+            let text_node = firstNode(getParentNode(startNode).childNodes, startNode, endNode);
+            let second_node = secondNode(text_node.node);
+            if(second_node.nodeType == Node.TEXT_NODE)
+            {
+                text_node = text_node.node;
+                while(text_node.nextSibling != second_node)
+                    text_node.nextSibling.remove();
+                deleteSelectedContent(text_node, text_node.startAt, text_node.textContent.length);
+                deleteSelectedContent(second_node, second_node.startAt, second_node.endAt);
+                resetSelection();
+                breakNewLine();
+            }
+            else
+            {
+                if(text_node.index < second_node.endAt)
+                {
+                    for (let j = text_node.index+1; j < second_node.endAt; j++)
+                        text_node.node.nextSibling.remove();
+                    deleteSelectedContent(text_node.node, text_node.node.startAt, startNode.textContent.length);
+                    resetSelection();
+                    breakNewLine();
+                }
+                else
+                {
+                    for (let j = text_node.index; j > second_node.endAt; j--)
+                        text_node.node.previousSibling.remove();
+                    deleteSelectedContent(text_node.node, 0, text_node.node.startAt);
+                    resetSelection();
+                    breakNewLine();
+                }
             }
         }
     }
@@ -402,70 +365,38 @@ function newLine($this) {
     {
         log('----- Multi line containers selected -----');
 
-        if(goLeftOrRight(0, $this.childNodes, startNode, endNode) == 1) {
-            log('1')
+        let first_node = firstNode($this.childNodes, startNode, endNode).node;
+        let second_node = secondNode(first_node);
+        while (first_node.nextSibling !== second_node)
+            first_node.nextSibling.remove();
 
-            while (startNode.nextSibling !== endNode)
-                startNode.nextSibling.remove();
-            
-            startNode = selection.anchorNode;
-            endNode = selection.focusNode;
+        startNode = selection.anchorNode;
+        endNode = selection.focusNode;
+        // FIXME 
+        first_node = firstNode(first_node.childNodes, selection.anchorNode, selection.focusNode).node;
+        second_node = secondNode(first_node);
 
-            if(startNode.nodeType == Node.TEXT_NODE) {
-                while(startNode.nextSibling)
-                    startNode.nextSibling.remove();
-                deleteSelectedContent(startNode, startAt, startNode.textContent.length);
-            }
-            else
-                deleteSelectedContent(startNode, startAt, startNode.childNodes.length);
-
-            let lineContainer = endNode;
-
-            if(endNode.nodeType == Node.TEXT_NODE){
-                while(endNode.previousSibling)
-                    endNode.previousSibling.remove();
-                lineContainer = endNode.parentNode;
-            }
-
-            deleteSelectedContent(endNode, 0, endAt);
-
-            if(lineContainer.firstChild.nodeType == Node.TEXT_NODE)
-                selection.setPosition(lineContainer.firstChild, 0);
-            else
-                selection.setPosition(lineContainer, 0);
-            return;
+        if(first_node.nodeType == Node.TEXT_NODE) {
+            while(first_node.nextSibling)
+                first_node.nextSibling.remove();
+            deleteSelectedContent(first_node, first_node.startAt, first_node.textContent.length);
         }
         else
-        {
-            log('-1')
-            while (endNode.nextSibling !== startNode)
-                endNode.nextSibling.remove();
-            
-            startNode = selection.anchorNode;
-            endNode = selection.focusNode;
+            deleteSelectedContent(first_node, first_node.startAt, first_node.childNodes.length);
 
-            if(endNode.nodeType == Node.TEXT_NODE) {
-                while(endNode.nextSibling)
-                    endNode.nextSibling.remove();
-                deleteSelectedContent(endNode, endAt, endNode.textContent.length);
-            }
-            else
-                deleteSelectedContent(endNode, endAt, endNode.childNodes.length);
+        let lineContainer = second_node;
 
-            let lineContainer = startNode;
-
-            if(startNode.nodeType == Node.TEXT_NODE){
-                while(startNode.previousSibling)
-                    startNode.previousSibling.remove();
-                lineContainer = startNode.parentNode;
-            }
-
-            deleteSelectedContent(startNode, 0, startAt);
-
-            if(lineContainer.firstChild.nodeType == Node.TEXT_NODE)
-                selection.setPosition(lineContainer.firstChild, 0);
-            else
-                selection.setPosition(lineContainer, 0);
+        if(second_node.nodeType == Node.TEXT_NODE){
+            while(second_node.previousSibling)
+                second_node.previousSibling.remove();
+            lineContainer = second_node.parentNode;
         }
+
+        deleteSelectedContent(second_node, 0, second_node.endAt);
+
+        if(lineContainer.firstChild.nodeType == Node.TEXT_NODE)
+            selection.setPosition(lineContainer.firstChild, 0);
+        else
+            selection.setPosition(lineContainer, 0);
     }
 }
