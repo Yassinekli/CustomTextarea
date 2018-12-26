@@ -284,18 +284,18 @@ function newLine($this) {
         }
     }
 
-    function secondNode(node) {
-        if(node == selection.anchorNode)
+    function secondNode(node, compareWith) {
+        if(node == compareWith.anchorNode)
         {
             node.startAt = startAt;
-            selection.focusNode.startAt = 0;
-            selection.focusNode.endAt = endAt;
-            return selection.focusNode;
+            compareWith.focusNode.startAt = 0;
+            compareWith.focusNode.endAt = endAt;
+            return compareWith.focusNode;
         }
         node.startAt = endAt;
-        selection.anchorNode.startAt = 0;
-        selection.anchorNode.endAt = startAt;
-        return selection.anchorNode;
+        compareWith.anchorNode.startAt = 0;
+        compareWith.anchorNode.endAt = startAt;
+        return compareWith.anchorNode;
     }
 
     
@@ -320,6 +320,7 @@ function newLine($this) {
         if(startNode == endNode)
         {
             log('----- Anchor & Caret are in the same node -----');
+            
             deleteSelectedContent(startNode, startAt, endAt);
             resetSelection();
             breakNewLine();
@@ -328,29 +329,39 @@ function newLine($this) {
         {
             log('----- Anchor & Caret are [NOT] in the same node -----');
             
+            // Find the first text node in the selected line container.
             startNode = firstNode(getParentNode(startNode).childNodes, startNode, endNode);
-            endNode = secondNode(startNode);
+            // Get the second selected node. (It could a text node or the line container)
+            endNode = secondNode(startNode, { anchorNode: selection.anchorNode, focusNode: selection.focusNode });
+            // Check if it is a text node.
             if(endNode.nodeType == Node.TEXT_NODE)
             {
+                // Start to delete the line container's children between the first selected text node and the second selected text node.
                 while(startNode.nextSibling != endNode)
                     startNode.nextSibling.remove();
+                // Delete the selected content from the bothtext node.
                 deleteSelectedContent(startNode, startNode.startAt, startNode.textContent.length);
                 deleteSelectedContent(endNode, endNode.startAt, endNode.endAt);
                 resetSelection();
                 breakNewLine();
             }
+            // If the second selected node is not a text node.
             else
             {
+                // If the first text node's position is less than the last set of mouse selection.
                 if(startNode.index < endNode.endAt)
                 {
+                    // Delete all the line container's children between the position of the first selected text node and the position of last set of mouse selection.
                     for (let j = startNode.index+1; j < endNode.endAt; j++)
                         startNode.nextSibling.remove();
                     deleteSelectedContent(startNode, startNode.startAt, startNode.textContent.length);
                     resetSelection();
                     breakNewLine();
                 }
+                // If the first text node's position was greater than the last set of mouse selection.
                 else
                 {
+                    // Delete all the line container's children between the position of the first selected text node and the position of last set of mouse selection.
                     for (let j = startNode.index; j > endNode.endAt; j--)
                         startNode.previousSibling.remove();
                     deleteSelectedContent(startNode, 0, startNode.startAt);
@@ -363,36 +374,44 @@ function newLine($this) {
     else
     {
         log('----- Multi line containers selected -----');
-
+        
+        // Delete line containers between the first selected line container and the last selected line container.
         startNode = firstNode($this.childNodes, startNode, endNode);
-        endNode = secondNode(startNode);
+        endNode = secondNode(startNode, { anchorNode:getParentNode(selection.anchorNode) , focusNode:getParentNode(selection.focusNode) });
         while (startNode.nextSibling !== endNode)
             startNode.nextSibling.remove();
 
-        startNode = selection.anchorNode;
-        endNode = selection.focusNode;
+        // Reset startNode and endNode objects to the origin selected nodes. 
+        if(getParentNode(selection.anchorNode) == startNode) {
+            startNode = selection.anchorNode;
+            endNode = secondNode(startNode, { anchorNode:selection.anchorNode , focusNode:selection.focusNode });
+        }
+        else {
+            startNode = selection.focusNode;
+            endNode = secondNode(startNode, { anchorNode:selection.anchorNode , focusNode:selection.focusNode });
+        }
         
-        first_node = firstNode(first_node.childNodes, selection.anchorNode, selection.focusNode);
-        second_node = secondNode(first_node);
-        
-        if(first_node.nodeType == Node.TEXT_NODE) {
-            while(first_node.nextSibling)
-                first_node.nextSibling.remove();
-            deleteSelectedContent(first_node, first_node.startAt, first_node.textContent.length);
+        // Delete content of the first selected line container.
+        if(startNode.nodeType == Node.TEXT_NODE) {
+            while(startNode.nextSibling)
+                startNode.nextSibling.remove();
+            deleteSelectedContent(startNode, startNode.startAt, startNode.textContent.length);
         }
         else
-            deleteSelectedContent(first_node, first_node.startAt, first_node.childNodes.length);
+            deleteSelectedContent(startNode, startNode.startAt, startNode.childNodes.length);
 
-        let lineContainer = second_node;
+        let lineContainer = endNode;
 
-        if(second_node.nodeType == Node.TEXT_NODE){
-            while(second_node.previousSibling)
-                second_node.previousSibling.remove();
-            lineContainer = second_node.parentNode;
+        // Delete content of the second selected line container.
+        if(endNode.nodeType == Node.TEXT_NODE){
+            while(endNode.previousSibling)
+                endNode.previousSibling.remove();
+            lineContainer = endNode.parentNode;
         }
 
-        deleteSelectedContent(second_node, 0, second_node.endAt);
+        deleteSelectedContent(endNode, 0, endNode.endAt);
 
+        // Make focus on the appropriate node.
         if(lineContainer.firstChild.nodeType == Node.TEXT_NODE)
             selection.setPosition(lineContainer.firstChild, 0);
         else
