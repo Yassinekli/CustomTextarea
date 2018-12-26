@@ -279,23 +279,23 @@ function newLine($this) {
 
     function firstNode(lineContainerChilds, anchorNode, focusNode) {
         for (let i = 0; i < lineContainerChilds.length; i++) {
-            if(lineContainerChilds.item(i) === anchorNode) return Object.create(null, {node: {value:anchorNode}, index: {value:i}});
-            if(lineContainerChilds.item(i) === focusNode) return Object.create(null, {node: {value:focusNode}, index: {value:i}});
+            if(lineContainerChilds.item(i) === anchorNode) { anchorNode.index = i; return anchorNode; };
+            if(lineContainerChilds.item(i) === focusNode) { focusNode.index = i; return focusNode; };
         }
     }
 
     function secondNode(node) {
-        if(node == startNode)
+        if(node == selection.anchorNode)
         {
             node.startAt = startAt;
-            endNode.startAt = 0;
-            endNode.endAt = endAt;
-            return endNode;
+            selection.focusNode.startAt = 0;
+            selection.focusNode.endAt = endAt;
+            return selection.focusNode;
         }
         node.startAt = endAt;
-        startNode.startAt = 0;
-        startNode.endAt = startAt;
-        return startNode;
+        selection.anchorNode.startAt = 0;
+        selection.anchorNode.endAt = startAt;
+        return selection.anchorNode;
     }
 
     
@@ -328,33 +328,32 @@ function newLine($this) {
         {
             log('----- Anchor & Caret are [NOT] in the same node -----');
             
-            let text_node = firstNode(getParentNode(startNode).childNodes, startNode, endNode);
-            let second_node = secondNode(text_node.node);
-            if(second_node.nodeType == Node.TEXT_NODE)
+            startNode = firstNode(getParentNode(startNode).childNodes, startNode, endNode);
+            endNode = secondNode(startNode);
+            if(endNode.nodeType == Node.TEXT_NODE)
             {
-                text_node = text_node.node;
-                while(text_node.nextSibling != second_node)
-                    text_node.nextSibling.remove();
-                deleteSelectedContent(text_node, text_node.startAt, text_node.textContent.length);
-                deleteSelectedContent(second_node, second_node.startAt, second_node.endAt);
+                while(startNode.nextSibling != endNode)
+                    startNode.nextSibling.remove();
+                deleteSelectedContent(startNode, startNode.startAt, startNode.textContent.length);
+                deleteSelectedContent(endNode, endNode.startAt, endNode.endAt);
                 resetSelection();
                 breakNewLine();
             }
             else
             {
-                if(text_node.index < second_node.endAt)
+                if(startNode.index < endNode.endAt)
                 {
-                    for (let j = text_node.index+1; j < second_node.endAt; j++)
-                        text_node.node.nextSibling.remove();
-                    deleteSelectedContent(text_node.node, text_node.node.startAt, startNode.textContent.length);
+                    for (let j = startNode.index+1; j < endNode.endAt; j++)
+                        startNode.nextSibling.remove();
+                    deleteSelectedContent(startNode, startNode.startAt, startNode.textContent.length);
                     resetSelection();
                     breakNewLine();
                 }
                 else
                 {
-                    for (let j = text_node.index; j > second_node.endAt; j--)
-                        text_node.node.previousSibling.remove();
-                    deleteSelectedContent(text_node.node, 0, text_node.node.startAt);
+                    for (let j = startNode.index; j > endNode.endAt; j--)
+                        startNode.previousSibling.remove();
+                    deleteSelectedContent(startNode, 0, startNode.startAt);
                     resetSelection();
                     breakNewLine();
                 }
@@ -365,17 +364,17 @@ function newLine($this) {
     {
         log('----- Multi line containers selected -----');
 
-        let first_node = firstNode($this.childNodes, startNode, endNode).node;
-        let second_node = secondNode(first_node);
-        while (first_node.nextSibling !== second_node)
-            first_node.nextSibling.remove();
+        startNode = firstNode($this.childNodes, startNode, endNode);
+        endNode = secondNode(startNode);
+        while (startNode.nextSibling !== endNode)
+            startNode.nextSibling.remove();
 
         startNode = selection.anchorNode;
         endNode = selection.focusNode;
-        // FIXME 
-        first_node = firstNode(first_node.childNodes, selection.anchorNode, selection.focusNode).node;
+        
+        first_node = firstNode(first_node.childNodes, selection.anchorNode, selection.focusNode);
         second_node = secondNode(first_node);
-
+        
         if(first_node.nodeType == Node.TEXT_NODE) {
             while(first_node.nextSibling)
                 first_node.nextSibling.remove();
