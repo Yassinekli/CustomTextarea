@@ -79,7 +79,7 @@ textarea.onkeydown = textarea2.onkeydown = function(event) {
     if(event.ctrlKey && event.key === "Enter")
     {
         event.preventDefault();
-        newLine(this);
+        newLineEvent(this);
     }
     else
     {
@@ -87,18 +87,15 @@ textarea.onkeydown = textarea2.onkeydown = function(event) {
         // The purpose of coding Delete and Backspace tap is to avoid some browsers to remove the first line container when it's empty.
         if(event.key.toUpperCase() == "DELETE" || event.key.toUpperCase() == "BACKSPACE")
         {
-            
+            deleteEvent(this, event);
         }
         if(event.key === 'Enter')
             event.preventDefault();
     }
 };
 
-//////////////////////////////////////////////////////
-//////              Utilities                   //////
-//////////////////////////////////////////////////////
-
-function newLine($this) {
+// BREAK NEW LINE EVENT
+function newLineEvent($this) {
     let selection = window.getSelection(),
         range = document.createRange(),
         startAt = selection.anchorOffset,
@@ -270,12 +267,6 @@ function newLine($this) {
         if(lineContainer.childNodes.length == 0)
             lineContainer.appendChild(document.createElement('br'));
     }
-     
-    function getParentNode(node) {
-        if(node.nodeType == Node.TEXT_NODE)
-            return node.parentNode;
-        return node;
-    }
 
     function firstNode(lineContainerChilds, anchorNode, focusNode) {
         for (let i = 0; i < lineContainerChilds.length; i++) {
@@ -298,20 +289,8 @@ function newLine($this) {
         return compareWith.anchorNode;
     }
 
-    
 
-    
-    //////////////////////////////////////////////////////////////
-    //////////////////////////////////////////////////////////////  Process of breaking new line start here
-    //////////////////////////////////////////////////////////////
-    // The mission start from multiple conditions before breaking new line
-    // the cause of that is to detect which state the user is to break a new line
-    if(startNode.nodeType === Node.TEXT_NODE)
-        startNode = startNode.parentNode;
-    if(endNode.nodeType === Node.TEXT_NODE)
-        endNode = endNode.parentNode;
-    
-    if(startNode === endNode){
+    if(handlingSingleLine(selection) == 1){
         log('----- Single line container -----');
 
         startNode = selection.anchorNode;
@@ -417,4 +396,78 @@ function newLine($this) {
         else
             selection.setPosition(lineContainer, 0);
     }
+}
+
+// DELETE EVENT
+function deleteEvent($this, event) {
+    let selection = window.getSelection(),
+        range = document.createRange(),
+        startAt = selection.anchorOffset,
+        endAt = selection.focusOffset,
+        startNode = selection.anchorNode,
+        endNode = selection.focusNode;
+
+    // Get all information about the focused line container before deleting the content.
+    let size = -1;
+    if(endNode.nodeType == Node.TEXT_NODE)
+        size = endNode.textContent.length;
+    let focusedLineContainer = getParentNode(endNode);
+    let isFirstChild = focusedLineContainer == $this.firstChild;
+    let sizeChilds = focusedLineContainer.childNodes.length;
+    let isEmpty = sizeChilds == 1 && focusedLineContainer.firstChild.nodeName.toUpperCase() == "BR";
+    
+    if(handlingSingleLine(selection))
+    {
+        if(startNode == endNode && startAt == endAt)
+        {
+            if(!isFirstChild)
+            {
+                if(isEmpty && event.key.toUpperCase() == "BACKSPACE")
+                { 
+                    log('Emprty & BACKSPACE');
+                    let lastPreviousSiblingChild = focusedLineContainer.previousSibling.lastChild;
+                    if(lastPreviousSiblingChild.nodeType == Node.TEXT_NODE)
+                        selection.setPosition(lastPreviousSiblingChild, lastPreviousSiblingChild.textContent.length);
+                    else
+                        selection.setPosition(lastPreviousSiblingChild, lastPreviousSiblingChild.childNodes.length);
+                    
+                    focusedLineContainer.remove();
+                    event.preventDefault();
+                    return;
+                }
+                else
+                {
+                    if(size == 1)
+                    {
+                        
+                        event.preventDefault();
+                    }
+                }
+            }
+        }
+    }
+}
+
+
+
+/////////////////////////////////////////////////////////////////////////////////////////////
+/////////////////////////////////////////////////////////////////////////////////////////////
+/////////////////////////////////////////////////////////////////////////////////////////////
+
+function handlingSingleLine(selection) {
+    let startNode = selection.anchorNode,
+        endNode = selection.focusNode;
+
+    if(startNode.nodeType === Node.TEXT_NODE)
+        startNode = startNode.parentNode;
+    if(endNode.nodeType === Node.TEXT_NODE)
+        endNode = endNode.parentNode;
+
+    return (startNode === endNode);
+}
+
+function getParentNode(node) {
+    if(node.nodeType == Node.TEXT_NODE)
+        return node.parentNode;
+    return node;
 }
