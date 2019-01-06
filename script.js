@@ -415,6 +415,7 @@ function deleteEvent($this, event) {
         size = endNode.textContent.length;
     let focusedLineContainer = getParentNode(endNode);
     let previousLineContainer = focusedLineContainer.previousSibling;
+    let nextLineContainer = focusedLineContainer.nextSibling;
     // TODO  : be sure to make the code below unique only in deleteEmptyLineContainer() function
     let isFirstChild = focusedLineContainer == $this.firstChild;
     let sizeChilds = focusedLineContainer.childNodes.length;
@@ -537,25 +538,27 @@ function deleteEvent($this, event) {
                             if(keyPressed == "BACKSPACE"){
                                 if(size == 1){
                                     event.preventDefault();
+                                    if(endNode.parentNode.childNodes.length == 1)
+                                        endNode.parentNode.appendChild(document.createElement('br'));
                                     endNode.remove();
                                 }
                             }
                             else{
                                 event.preventDefault();
-                                log('BACKSPACE')
-                                if(focusedLineContainer.firstChild == endNode && !isFirstChild)
+                                log('DELETE');
+                                if(focusedLineContainer.lastChild == endNode && nextLineContainer)
                                 {
-                                    // NOTE  : Same concept with code 100
-                                    if(previousLineContainer.lastChild.nodeType == Node.TEXT_NODE)
+                                    
+                                    if(nextLineContainer.firstChild.nodeType == Node.TEXT_NODE)
                                     {
-                                        let length = previousLineContainer.lastChild.textContent.length;
-                                        previousLineContainer.lastChild.textContent += endNode.textContent;
-                                        selection.setPosition(previousLineContainer.lastChild, length);
+                                        let length = nextLineContainer.firstChild.textContent.length;
+                                        focusedLineContainer.lastChild.textContent += nextLineContainer.firstChild.textContent;
+                                        selection.setPosition(focusedLineContainer.lastChild, length);
                                     }
                                     else
                                     {
-                                        selection.setPosition(previousLineContainer, previousLineContainer.childNodes.length);
-                                        previousLineContainer.appendChild(endNode.cloneNode());
+                                        selection.setPosition(focusedLineContainer, focusedLineContainer.childNodes.length);
+                                        nextLineContainer.appendChild(endNode.cloneNode());
                                     }
                                     
                                     while (endNode.nextSibling)
@@ -564,7 +567,7 @@ function deleteEvent($this, event) {
                                     focusedLineContainer.remove();
                                 }
                                 else{
-                                    // NOTE  : Same concept with code 100
+                                    
                                     if(endNode.previousSibling) {
                                         endNode.previousSibling.remove();
                                         let prevNode = endNode.previousSibling;
