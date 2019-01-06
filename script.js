@@ -438,6 +438,26 @@ function deleteEvent($this, event) {
         }
     }
     
+    /*function mergeTwoLineContainer(currentLineContainer, siblingLineContainer, detectiveChild, caretPosition) {
+        if(siblingLineContainer[detectiveChild].nodeType == Node.TEXT_NODE)
+        {
+            let length = siblingLineContainer[detectiveChild].textContent.length;
+            siblingLineContainer[detectiveChild].textContent += endNode.textContent;
+            selection.setPosition(siblingLineContainer[detectiveChild], length);
+        }
+        else
+        {
+            selection.setPosition(siblingLineContainer, caretPosition);
+            siblingLineContainer.appendChild(endNode.cloneNode());
+        }
+        
+        while (endNode.nextSibling)
+            siblingLineContainer.appendChild(endNode.nextSibling);
+        
+        currentLineContainer.remove();
+    }*/
+
+
     ///////////////////////////////////////
     // ********************************* //
     ///////////////////////////////////////
@@ -456,17 +476,76 @@ function deleteEvent($this, event) {
             else {
                 log('Not Empty');
 
-                if(size > 1) {
+                if(size > 0) {
                     let cases = (endAt == 0) ? -1 : (endAt == size) ? 0 : 1;
                     switch (cases) {
+                        // If the caret at the beginning of text content
                         case -1:
-                            event.preventDefault();
                             log('Case -1');
-                            if(keyPressed == "BACKSPACE")
-                            {
+                            if(keyPressed == "BACKSPACE"){
+                                event.preventDefault();
                                 log('BACKSPACE')
-                                if(!endNode.previousSibling && !isFirstChild)
+                                if(focusedLineContainer.firstChild == endNode && !isFirstChild){
+                                    // NOTE  : Same concept with code 100
+                                    if(previousLineContainer.lastChild.nodeType == Node.TEXT_NODE){
+                                        let length = previousLineContainer.lastChild.textContent.length;
+                                        previousLineContainer.lastChild.textContent += endNode.textContent;
+                                        selection.setPosition(previousLineContainer.lastChild, length);
+                                    }
+                                    else{
+                                        selection.setPosition(previousLineContainer, previousLineContainer.childNodes.length);
+                                        previousLineContainer.appendChild(endNode.cloneNode());
+                                    }
+                                    
+                                    while (endNode.nextSibling)
+                                        previousLineContainer.appendChild(endNode.nextSibling);
+                                    
+                                    focusedLineContainer.remove();
+                                }
+                                else{
+                                    // NOTE  : Same concept with code 100
+                                    if(endNode.previousSibling) {
+                                        endNode.previousSibling.remove();
+                                        let prevNode = endNode.previousSibling;
+                                        if(prevNode && prevNode.nodeType == Node.TEXT_NODE){
+                                            let length = prevNode.textContent.length;
+                                            prevNode.textContent += endNode.textContent;
+                                            selection.setPosition(prevNode, length);
+                                            endNode.remove();
+                                        }
+                                    }
+                                }
+                            }
+                            else{
+                                if(size == 1){
+                                    event.preventDefault();
+                                    if(endNode.parentNode.childNodes.length == 1)
+                                        endNode.parentNode.appendChild(document.createElement('br'));
+                                    endNode.remove();
+                                }
+                            }
+                        break;
+
+
+
+
+
+
+                        // If the caret at the end of text content
+                        case 0:
+                            log('Case 0');
+                            if(keyPressed == "BACKSPACE"){
+                                if(size == 1){
+                                    event.preventDefault();
+                                    endNode.remove();
+                                }
+                            }
+                            else{
+                                event.preventDefault();
+                                log('BACKSPACE')
+                                if(focusedLineContainer.firstChild == endNode && !isFirstChild)
                                 {
+                                    // NOTE  : Same concept with code 100
                                     if(previousLineContainer.lastChild.nodeType == Node.TEXT_NODE)
                                     {
                                         let length = previousLineContainer.lastChild.textContent.length;
@@ -484,15 +563,19 @@ function deleteEvent($this, event) {
                                     
                                     focusedLineContainer.remove();
                                 }
-                                else
-                                    if(endNode.previousSibling)
+                                else{
+                                    // NOTE  : Same concept with code 100
+                                    if(endNode.previousSibling) {
                                         endNode.previousSibling.remove();
-                            }
-                            else
-                            {
-                                if(size == 1)
-                                {
-                                    
+                                        let prevNode = endNode.previousSibling;
+                                        if(prevNode && prevNode.nodeType == Node.TEXT_NODE)
+                                        {
+                                            let length = prevNode.textContent.length;
+                                            prevNode.textContent += endNode.textContent;
+                                            selection.setPosition(prevNode, length);
+                                            endNode.remove();
+                                        }
+                                    }
                                 }
                             }
                         break;
