@@ -548,35 +548,29 @@ function deleteEvent($this, event) {
                                 log('DELETE');
                                 if(focusedLineContainer.lastChild == endNode && nextLineContainer)
                                 {
-                                    
                                     if(nextLineContainer.firstChild.nodeType == Node.TEXT_NODE)
                                     {
-                                        let length = nextLineContainer.firstChild.textContent.length;
+                                        let length = focusedLineContainer.lastChild.textContent.length;
                                         focusedLineContainer.lastChild.textContent += nextLineContainer.firstChild.textContent;
+                                        nextLineContainer.firstChild.remove();
                                         selection.setPosition(focusedLineContainer.lastChild, length);
                                     }
-                                    else
-                                    {
-                                        selection.setPosition(focusedLineContainer, focusedLineContainer.childNodes.length);
-                                        nextLineContainer.appendChild(endNode.cloneNode());
-                                    }
                                     
-                                    while (endNode.nextSibling)
-                                        previousLineContainer.appendChild(endNode.nextSibling);
+                                    while (nextLineContainer.firstChild)
+                                        focusedLineContainer.appendChild(nextLineContainer.firstChild);
                                     
-                                    focusedLineContainer.remove();
+                                    nextLineContainer.remove();
                                 }
                                 else{
-                                    
-                                    if(endNode.previousSibling) {
-                                        endNode.previousSibling.remove();
-                                        let prevNode = endNode.previousSibling;
-                                        if(prevNode && prevNode.nodeType == Node.TEXT_NODE)
+                                    if(endNode.nextSibling) {
+                                        endNode.nextSibling.remove();
+                                        let nextNode = endNode.nextSibling;
+                                        if(nextNode && nextNode.nodeType == Node.TEXT_NODE)
                                         {
-                                            let length = prevNode.textContent.length;
-                                            prevNode.textContent += endNode.textContent;
-                                            selection.setPosition(prevNode, length);
-                                            endNode.remove();
+                                            let length = endNode.textContent.length;
+                                            endNode.textContent += nextNode.textContent;
+                                            selection.setPosition(endNode, length);
+                                            nextNode.remove();
                                         }
                                     }
                                 }
