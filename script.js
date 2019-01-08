@@ -478,10 +478,10 @@ function deleteEvent($this, event) {
                 log('Not Empty');
 
                 if(size > 0) {
-                    let cases = (endAt == 0) ? -1 : (endAt == size) ? 0 : 1;
+                    let cases = (endAt == 0) ? 0 : (endAt == size) ? 1 : -1;
                     switch (cases) {
                         // If the caret at the beginning of text content
-                        case -1:
+                        case 0:
                             log('Case -1');
                             if(keyPressed == "BACKSPACE"){
                                 event.preventDefault();
@@ -527,13 +527,8 @@ function deleteEvent($this, event) {
                             }
                         break;
 
-
-
-
-
-
                         // If the caret at the end of text content
-                        case 0:
+                        case 1:
                             log('Case 0');
                             if(keyPressed == "BACKSPACE"){
                                 if(size == 1){
@@ -577,6 +572,10 @@ function deleteEvent($this, event) {
                             }
                         break;
                     }
+                }
+                else
+                {
+                    
                 }
             }
         }
