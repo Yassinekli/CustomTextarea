@@ -428,14 +428,25 @@ function deleteEvent($this, event) {
     //////////
     ////////////////////////////////////////////////////////////////////
 
-    function deleteEmptyLineContainer() {
-        if(keyPressed == "BACKSPACE" && !isFirstChild) {
-            if(previousLineContainer.lastChild.nodeType == Node.TEXT_NODE)
-                selection.setPosition(previousLineContainer.lastChild, previousLineContainer.lastChild.textContent.length);
+    function deleteEmptyLineContainer(currentLineContainer, siblingLineContainer, detectiveChild) {
+        if(siblingLineContainer) {
+            if(siblingLineContainer[detectiveChild].nodeType == Node.TEXT_NODE)
+            {
+                if(keyPressed == "BACKSPACE")
+                    selection.setPosition(siblingLineContainer[detectiveChild], siblingLineContainer[detectiveChild].textContent.length);
+                else
+                    selection.setPosition(siblingLineContainer[detectiveChild], 0);
+            }
             else
-                selection.setPosition(previousLineContainer, previousLineContainer.childNodes.length);
+            {
+                if(keyPressed == "BACKSPACE")
+                    selection.setPosition(siblingLineContainer, siblingLineContainer.childNodes.length);
+                else
+                    selection.setPosition(siblingLineContainer, 0);
+            }
             
-            focusedLineContainer.remove();
+            currentLineContainer.remove();
+            log('Delete Empty Line Container')
         }
     }
     
@@ -472,17 +483,19 @@ function deleteEvent($this, event) {
             if(isEmpty) {
                 log('Empty Line Container');
                 event.preventDefault();
-                deleteEmptyLineContainer();
+                (keyPressed == "BACKSPACE") ? deleteEmptyLineContainer(focusedLineContainer, focusedLineContainer.previousSibling, 'lastChild') 
+                                            : deleteEmptyLineContainer(focusedLineContainer, focusedLineContainer.nextSibling, 'firstChild');
             }
             else {
                 log('Not Empty');
 
                 if(size > 0) {
+                    log('Text');
                     let cases = (endAt == 0) ? 0 : (endAt == size) ? 1 : -1;
                     switch (cases) {
                         // If the caret at the beginning of text content
                         case 0:
-                            log('Case -1');
+                            log('Case 0');
                             if(keyPressed == "BACKSPACE"){
                                 event.preventDefault();
                                 log('BACKSPACE')
@@ -526,10 +539,10 @@ function deleteEvent($this, event) {
                                 }
                             }
                         break;
-
+            
                         // If the caret at the end of text content
                         case 1:
-                            log('Case 0');
+                            log('Case 1');
                             if(keyPressed == "BACKSPACE"){
                                 if(size == 1){
                                     event.preventDefault();
@@ -575,7 +588,18 @@ function deleteEvent($this, event) {
                 }
                 else
                 {
-                    
+                    log('Not a text');
+                    event.preventDefault();
+                    if(keyPressed == 'BACKSPACE')
+                    {
+                        log(endAt)
+                        log(endNode.childNodes.item(endAt))
+                    }
+                    else
+                    {
+                        log(endAt)
+                        log(endNode.childNodes.item(endAt))
+                    }
                 }
             }
         }
@@ -585,47 +609,8 @@ function deleteEvent($this, event) {
 
 
 
-
-
 /*
-if(size > 1)
-{
-    let cases = (endAt == 0) ? -1 : (endAt == size) ? 0 : 1;
-    switch (cases) {
-        case -1:
-                log('Case -1');
-                if(!endNode.previousSibling)
-                {
-                    if(previousLineContainer.lastChild.nodeType == Node.TEXT_NODE)
-                    {
-                        let length = previousLineContainer.lastChild.textContent.length;
-                        previousLineContainer.lastChild.textContent += endNode.textContent;
-                        selection.setPosition(previousLineContainer.lastChild, length); 
-                    }
-                    else
-                        previousLineContainer.appendChild(endNode.cloneNode());
-                    
-                    while (endNode.nextSibling)
-                        previousLineContainer.appendChild(endNode.nextSibling);
-                    
-                    focusedLineContainer.remove();
-                    event.preventDefault();
-                }
-                else
-                {
-
-                }
-            break;
     
-        case 0:
-            log('Case 0');
-            break;
-
-        case 1:
-            log('Case 1');
-            break;
-    }
-}
 */
 
 
