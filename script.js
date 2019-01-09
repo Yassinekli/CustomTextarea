@@ -399,7 +399,6 @@ function newLineEvent($this) {
 }
 
 // DELETE EVENT
-// FIXME  : Don't forget to switch event parameter to pass the key delete pressed on keyboard
 function deleteEvent($this, event) {
     let selection = window.getSelection(),
         range = document.createRange(),
@@ -416,7 +415,6 @@ function deleteEvent($this, event) {
     let focusedLineContainer = getParentNode(endNode);
     let previousLineContainer = focusedLineContainer.previousSibling;
     let nextLineContainer = focusedLineContainer.nextSibling;
-    // TODO  : be sure to make the code below unique only in deleteEmptyLineContainer() function
     let isFirstChild = focusedLineContainer == $this.firstChild;
     let sizeChilds = focusedLineContainer.childNodes.length;
     let isEmpty = (sizeChilds == 1 && focusedLineContainer.firstChild.nodeName.toUpperCase() == "BR");
@@ -450,24 +448,9 @@ function deleteEvent($this, event) {
         }
     }
     
-    /*function mergeTwoLineContainer(currentLineContainer, siblingLineContainer, detectiveChild, caretPosition) {
-        if(siblingLineContainer[detectiveChild].nodeType == Node.TEXT_NODE)
-        {
-            let length = siblingLineContainer[detectiveChild].textContent.length;
-            siblingLineContainer[detectiveChild].textContent += endNode.textContent;
-            selection.setPosition(siblingLineContainer[detectiveChild], length);
-        }
-        else
-        {
-            selection.setPosition(siblingLineContainer, caretPosition);
-            siblingLineContainer.appendChild(endNode.cloneNode());
-        }
+    function mergeTwoLineContainer(currentLineContainer, siblingLineContainer, detectiveChild, caretPosition) {
         
-        while (endNode.nextSibling)
-            siblingLineContainer.appendChild(endNode.nextSibling);
-        
-        currentLineContainer.remove();
-    }*/
+    }
 
 
     ///////////////////////////////////////
@@ -499,6 +482,7 @@ function deleteEvent($this, event) {
                             if(keyPressed == "BACKSPACE"){
                                 event.preventDefault();
                                 log('BACKSPACE')
+                                // TODO Create a function to merge two lines container
                                 if(focusedLineContainer.firstChild == endNode && !isFirstChild){
                                     // NOTE  : Same concept with code 100
                                     if(previousLineContainer.lastChild.nodeType == Node.TEXT_NODE){
@@ -517,6 +501,7 @@ function deleteEvent($this, event) {
                                     focusedLineContainer.remove();
                                 }
                                 else{
+                                    // TODO Create a function to merge two lines container
                                     // NOTE  : Same concept with code 100
                                     if(endNode.previousSibling) {
                                         endNode.previousSibling.remove();
@@ -554,6 +539,7 @@ function deleteEvent($this, event) {
                             else{
                                 event.preventDefault();
                                 log('DELETE');
+                                // TODO Create a function to merge two lines container
                                 if(focusedLineContainer.lastChild == endNode && nextLineContainer)
                                 {
                                     if(nextLineContainer.firstChild.nodeType == Node.TEXT_NODE)
@@ -570,6 +556,7 @@ function deleteEvent($this, event) {
                                     nextLineContainer.remove();
                                 }
                                 else{
+                                    // TODO Create a function to merge two lines container
                                     if(endNode.nextSibling) {
                                         endNode.nextSibling.remove();
                                         let nextNode = endNode.nextSibling;
@@ -589,11 +576,19 @@ function deleteEvent($this, event) {
                 else
                 {
                     log('Not a text');
+
                     event.preventDefault();
+                    let prevChild = endNode.childNodes.item(endAt - 1);
+                    let nextChild = endNode.childNodes.item(endAt);
+                    
                     if(keyPressed == 'BACKSPACE')
                     {
-                        log(endAt)
-                        log(endNode.childNodes.item(endAt))
+                        if(!prevChild) {
+                            // TODO Create a function to merge two lines container
+                        }
+                        else {
+
+                        }
                     }
                     else
                     {
