@@ -448,8 +448,49 @@ function deleteEvent($this, event) {
         }
     }
     
-    function mergeTwoLineContainer(currentLineContainer, siblingLineContainer, detectiveChild, caretPosition) {
-        
+    function mergeTwoLineContainer(currentNode, siblingLineContainer, detectiveChild) {
+        if(siblingLineContainer){
+            if(siblingLineContainer[detectiveChild].nodeType == Node.TEXT_NODE)
+            {
+                let textNode = siblingLineContainer[detectiveChild];
+                if(currentNode.nodeType == Node.TEXT_NODE) {
+                    function mergeTwoTexts(text1, text2) {
+                        let length = text1.textContent.length;
+                        let text1Parent = getParentNode(text1);
+                        text1.textContent += text2.textContent;
+                        selection.setPosition(text1, length);
+
+                        while(text2.nextSibling)
+                            text1Parent.appendChild(text2.nextSibling);
+
+                        text1Parent.nextSibling.remove();
+                    }
+
+                    (textNode == siblingLineContainer.lastChild)
+                        ? mergeTwoTexts(textNode, currentNode)
+                        : mergeTwoTexts(currentNode, textNode);
+                }
+                else {
+                    if(textNode == siblingLineContainer.lastChild){
+                        let firstNode = currentNode.firstChild;
+                        selection.setPosition(textNode, textNode.textContent.length);
+                        while (firstNode.nextSibling) 
+                            siblingLineContainer.appendChild(firstNode.nextSibling);
+                        currentNode.remove();
+                    }
+                    else{
+                        selection.setPosition(currentNode, currentNode.childNodes.length);
+                        while (textNode.nextSibling) 
+                            currentNode.appendChild(textNode.nextSibling);
+                        siblingLineContainer.remove();
+                    }
+                }
+            }
+            else
+            {
+                
+            }
+        }
     }
 
 
@@ -476,33 +517,20 @@ function deleteEvent($this, event) {
                     log('Text');
                     let cases = (endAt == 0) ? 0 : (endAt == size) ? 1 : -1;
                     switch (cases) {
+
+
+
+
                         // If the caret at the beginning of text content
                         case 0:
                             log('Case 0');
                             if(keyPressed == "BACKSPACE"){
                                 event.preventDefault();
                                 log('BACKSPACE')
-                                // TODO Create a function to merge two lines container
-                                if(focusedLineContainer.firstChild == endNode && !isFirstChild){
-                                    // NOTE  : Same concept with code 100
-                                    if(previousLineContainer.lastChild.nodeType == Node.TEXT_NODE){
-                                        let length = previousLineContainer.lastChild.textContent.length;
-                                        previousLineContainer.lastChild.textContent += endNode.textContent;
-                                        selection.setPosition(previousLineContainer.lastChild, length);
-                                    }
-                                    else{
-                                        selection.setPosition(previousLineContainer, previousLineContainer.childNodes.length);
-                                        previousLineContainer.appendChild(endNode.cloneNode());
-                                    }
-                                    
-                                    while (endNode.nextSibling)
-                                        previousLineContainer.appendChild(endNode.nextSibling);
-                                    
-                                    focusedLineContainer.remove();
-                                }
-                                else{
-                                    // TODO Create a function to merge two lines container
-                                    // NOTE  : Same concept with code 100
+                                if(endNode == focusedLineContainer.firstChild)
+                                    mergeTwoLineContainer(endNode, focusedLineContainer.previousSibling, 'lastChild');
+                                else
+                                {
                                     if(endNode.previousSibling) {
                                         endNode.previousSibling.remove();
                                         let prevNode = endNode.previousSibling;
@@ -525,6 +553,11 @@ function deleteEvent($this, event) {
                             }
                         break;
             
+
+
+
+
+
                         // If the caret at the end of text content
                         case 1:
                             log('Case 1');
@@ -539,24 +572,9 @@ function deleteEvent($this, event) {
                             else{
                                 event.preventDefault();
                                 log('DELETE');
-                                // TODO Create a function to merge two lines container
-                                if(focusedLineContainer.lastChild == endNode && nextLineContainer)
-                                {
-                                    if(nextLineContainer.firstChild.nodeType == Node.TEXT_NODE)
-                                    {
-                                        let length = focusedLineContainer.lastChild.textContent.length;
-                                        focusedLineContainer.lastChild.textContent += nextLineContainer.firstChild.textContent;
-                                        nextLineContainer.firstChild.remove();
-                                        selection.setPosition(focusedLineContainer.lastChild, length);
-                                    }
-                                    
-                                    while (nextLineContainer.firstChild)
-                                        focusedLineContainer.appendChild(nextLineContainer.firstChild);
-                                    
-                                    nextLineContainer.remove();
-                                }
+                                if(endNode == focusedLineContainer.lastChild)
+                                    mergeTwoLineContainer(endNode, focusedLineContainer.nextSibling, 'firstChild');
                                 else{
-                                    // TODO Create a function to merge two lines container
                                     if(endNode.nextSibling) {
                                         endNode.nextSibling.remove();
                                         let nextNode = endNode.nextSibling;
@@ -578,22 +596,19 @@ function deleteEvent($this, event) {
                     log('Not a text');
 
                     event.preventDefault();
-                    let prevChild = endNode.childNodes.item(endAt - 1);
-                    let nextChild = endNode.childNodes.item(endAt);
-                    
                     if(keyPressed == 'BACKSPACE')
                     {
-                        if(!prevChild) {
-                            // TODO Create a function to merge two lines container
+                        if(endAt == 0) {
+                            mergeTwoLineContainer(endNode, focusedLineContainer.previousSibling, 'lastChild');
                         }
                         else {
-
+                            log('dada')
                         }
                     }
                     else
                     {
-                        log(endAt)
-                        log(endNode.childNodes.item(endAt))
+                        if(endAt == endNode.childNodes.length)
+                            mergeTwoLineContainer(endNode, focusedLineContainer.nextSibling, 'firstChild');
                     }
                 }
             }
@@ -605,7 +620,37 @@ function deleteEvent($this, event) {
 
 
 /*
-    
+    // TODO Create a function to merge two lines container
+                                if(focusedLineContainer.firstChild == endNode && !isFirstChild){
+                                    // NOTE  : Same concept with code 100
+                                    if(previousLineContainer.lastChild.nodeType == Node.TEXT_NODE){
+                                        let length = previousLineContainer.lastChild.textContent.length;
+                                        previousLineContainer.lastChild.textContent += endNode.textContent;
+                                        selection.setPosition(previousLineContainer.lastChild, length);
+                                    }
+                                    else{
+                                        selection.setPosition(previousLineContainer, previousLineContainer.childNodes.length);
+                                        previousLineContainer.appendChild(endNode.cloneNode());
+                                    }
+                                    
+                                    while (endNode.nextSibling)
+                                        previousLineContainer.appendChild(endNode.nextSibling);
+                                    
+                                    focusedLineContainer.remove();
+                                }
+                                else{
+                                    // NOTE  : Same concept with code 100
+                                    if(endNode.previousSibling) {
+                                        endNode.previousSibling.remove();
+                                        let prevNode = endNode.previousSibling;
+                                        if(prevNode && prevNode.nodeType == Node.TEXT_NODE){
+                                            let length = prevNode.textContent.length;
+                                            prevNode.textContent += endNode.textContent;
+                                            selection.setPosition(prevNode, length);
+                                            endNode.remove();
+                                        }
+                                    }
+                                }
 */
 
 
