@@ -466,12 +466,13 @@ function deleteEvent($this, event) {
                         text1Parent.nextSibling.remove();
                     }
 
-                    (textNode == siblingLineContainer.lastChild)
+                    (keyPressed == "BACKSPACE")
                         ? mergeTwoTexts(textNode, currentNode)
                         : mergeTwoTexts(currentNode, textNode);
                 }
                 else {
-                    if(textNode == siblingLineContainer.lastChild){
+                    if(keyPressed == "BACKSPACE"){
+                        
                         let firstNode = currentNode.firstChild;
                         selection.setPosition(textNode, textNode.textContent.length);
                         while (firstNode.nextSibling) 
@@ -480,6 +481,7 @@ function deleteEvent($this, event) {
                     }
                     else{
                         selection.setPosition(currentNode, currentNode.childNodes.length);
+                        currentNode.appendChild(textNode.cloneNode());
                         while (textNode.nextSibling) 
                             currentNode.appendChild(textNode.nextSibling);
                         siblingLineContainer.remove();
