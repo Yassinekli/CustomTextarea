@@ -452,6 +452,7 @@ function deleteEvent($this, event) {
         if(siblingLineContainer){
             if(siblingLineContainer[detectiveChild].nodeType == Node.TEXT_NODE)
             {
+                log("the detected child of siblingLineContainer is a text")
                 let textNode = siblingLineContainer[detectiveChild];
                 if(currentNode.nodeType == Node.TEXT_NODE) {
                     function mergeTwoTexts(text1, text2) {
@@ -472,9 +473,9 @@ function deleteEvent($this, event) {
                 }
                 else {
                     if(keyPressed == "BACKSPACE"){
-                        
-                        let firstNode = currentNode.firstChild;
                         selection.setPosition(textNode, textNode.textContent.length);
+                        let firstNode = currentNode.firstChild;
+                        siblingLineContainer.appendChild(firstNode.cloneNode());
                         while (firstNode.nextSibling) 
                             siblingLineContainer.appendChild(firstNode.nextSibling);
                         currentNode.remove();
@@ -490,7 +491,28 @@ function deleteEvent($this, event) {
             }
             else
             {
-                
+                log("the detected child of siblingLineContainer is not a text")
+                let parentNode = getParentNode(currentNode);
+                if(keyPressed == "BACKSPACE"){
+                    selection.setPosition(siblingLineContainer, siblingLineContainer.childNodes.length);
+                    let firstNode = parentNode.firstChild;
+                    siblingLineContainer.appendChild(firstNode.cloneNode());
+                    while (firstNode.nextSibling) 
+                        siblingLineContainer.appendChild(firstNode.nextSibling);
+                    currentNode.remove();
+                }
+                else
+                {
+                    if(currentNode == parentNode)
+                        selection.setPosition(currentNode, currentNode.childNodes.length);
+                    else
+                        selection.setPosition(currentNode, currentNode.textContent.length);
+                    let firstNode = siblingLineContainer.firstChild;
+                    parentNode.appendChild(firstNode.cloneNode());
+                    while (firstNode.nextSibling) 
+                        currentNode.appendChild(firstNode.nextSibling);
+                    siblingLineContainer.remove();
+                }
             }
         }
     }
@@ -519,10 +541,6 @@ function deleteEvent($this, event) {
                     log('Text');
                     let cases = (endAt == 0) ? 0 : (endAt == size) ? 1 : -1;
                     switch (cases) {
-
-
-
-
                         // If the caret at the beginning of text content
                         case 0:
                             log('Case 0');
@@ -554,11 +572,6 @@ function deleteEvent($this, event) {
                                 }
                             }
                         break;
-            
-
-
-
-
 
                         // If the caret at the end of text content
                         case 1:
