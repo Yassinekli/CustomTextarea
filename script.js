@@ -609,21 +609,53 @@ function deleteEvent($this, event) {
                 else
                 {
                     log('Not a text');
-
-                    event.preventDefault();
                     if(keyPressed == 'BACKSPACE')
                     {
                         if(endAt == 0) {
+                            event.preventDefault();
                             mergeTwoLineContainer(endNode, focusedLineContainer.previousSibling, 'lastChild');
                         }
                         else {
-                            log('dada')
+                            if(endAt == 1 && endNode.firstChild.nodeType != Node.TEXT_NODE && endNode.childNodes.length == 1)
+                            {
+                                event.preventDefault();
+                                endNode.appendChild(document.createElement('br'));
+                                endNode.firstChild.remove();
+                            }
+                            else
+                            {
+                                let currentNode = endNode.childNodes.item(endAt - 1);
+                                if(currentNode.previousSibling && 
+                                    currentNode.nextSibling &&
+                                    currentNode.previousSibling.nodeType == Node.TEXT_NODE &&  
+                                    currentNode.nextSibling.nodeType == Node.TEXT_NODE)
+                                {
+                                    event.preventDefault();
+                                    let length = currentNode.previousSibling.textContent.length;
+                                    currentNode.previousSibling.textContent += currentNode.nextSibling.textContent;
+                                    selection.setPosition(currentNode.previousSibling, length);
+                                    currentNode.nextSibling.remove();
+                                    currentNode.remove();
+                                }
+                            }
                         }
                     }
                     else
                     {
                         if(endAt == endNode.childNodes.length)
+                        {
+                            event.preventDefault();
                             mergeTwoLineContainer(endNode, focusedLineContainer.nextSibling, 'firstChild');
+                        }
+                        else
+                        {
+                            if(endAt == 0 && endNode.firstChild.nodeType != Node.TEXT_NODE && endNode.childNodes.length == 1)
+                            {
+                                event.preventDefault();
+                                endNode.appendChild(document.createElement('br'));
+                                endNode.firstChild.remove();
+                            }
+                        }
                     }
                 }
             }
