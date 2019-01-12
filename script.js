@@ -413,9 +413,11 @@ function deleteEvent($this, event) {
     if(endNode.nodeType == Node.TEXT_NODE)
         size = endNode.textContent.length;
     let focusedLineContainer = getParentNode(endNode);
+    /*
+    -------------- Some variables not used --------------
     let previousLineContainer = focusedLineContainer.previousSibling;
     let nextLineContainer = focusedLineContainer.nextSibling;
-    let isFirstChild = focusedLineContainer == $this.firstChild;
+    let isFirstChild = focusedLineContainer == $this.firstChild;*/
     let sizeChilds = focusedLineContainer.childNodes.length;
     let isEmpty = (sizeChilds == 1 && focusedLineContainer.firstChild.nodeName.toUpperCase() == "BR");
     
@@ -455,6 +457,7 @@ function deleteEvent($this, event) {
                 log("the detected child of siblingLineContainer is a text")
                 let textNode = siblingLineContainer[detectiveChild];
                 if(currentNode.nodeType == Node.TEXT_NODE) {
+                    // Redefine mergeTwoTexts() Function
                     function mergeTwoTexts(text1, text2) {
                         let length = text1.textContent.length;
                         let text1Parent = getParentNode(text1);
@@ -517,6 +520,12 @@ function deleteEvent($this, event) {
         }
     }
 
+    function mergeTwoTexts(text1, text2) {
+        let length = text1.textContent.length;
+        text1.textContent += text2.textContent;
+        selection.setPosition(text1, length);
+        text2.remove();
+    }
 
     ///////////////////////////////////////
     // ********************************* //
@@ -529,16 +538,24 @@ function deleteEvent($this, event) {
         {
             log('No Selection');
             if(isEmpty) {
+                /////////////////////////////////////////////////////////////////////////////////////////////////////////
+                //                                       Empty Line Container                                          //
+                /////////////////////////////////////////////////////////////////////////////////////////////////////////
+
                 log('Empty Line Container');
                 event.preventDefault();
                 (keyPressed == "BACKSPACE") ? deleteEmptyLineContainer(focusedLineContainer, focusedLineContainer.previousSibling, 'lastChild') 
                                             : deleteEmptyLineContainer(focusedLineContainer, focusedLineContainer.nextSibling, 'firstChild');
             }
             else {
-                log('Not Empty');
+                log('Not Empty Line Container');
 
                 if(size > 0) {
-                    log('Text');
+                    /////////////////////////////////////////////////////////////////////////////////////////////////////////
+                    //                                               Text Node                                             //
+                    /////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+                    log('Text Node');
                     let cases = (endAt == 0) ? 0 : (endAt == size) ? 1 : -1;
                     switch (cases) {
                         // If the caret at the beginning of text content
@@ -554,12 +571,8 @@ function deleteEvent($this, event) {
                                     if(endNode.previousSibling) {
                                         endNode.previousSibling.remove();
                                         let prevNode = endNode.previousSibling;
-                                        if(prevNode && prevNode.nodeType == Node.TEXT_NODE){
-                                            let length = prevNode.textContent.length;
-                                            prevNode.textContent += endNode.textContent;
-                                            selection.setPosition(prevNode, length);
-                                            endNode.remove();
-                                        }
+                                        if(prevNode && prevNode.nodeType == Node.TEXT_NODE)
+                                            mergeTwoTexts(prevNode, endNode);
                                     }
                                 }
                             }
@@ -594,12 +607,7 @@ function deleteEvent($this, event) {
                                         endNode.nextSibling.remove();
                                         let nextNode = endNode.nextSibling;
                                         if(nextNode && nextNode.nodeType == Node.TEXT_NODE)
-                                        {
-                                            let length = endNode.textContent.length;
-                                            endNode.textContent += nextNode.textContent;
-                                            selection.setPosition(endNode, length);
-                                            nextNode.remove();
-                                        }
+                                            mergeTwoTexts(endNode, nextNode);
                                     }
                                 }
                             }
@@ -608,6 +616,10 @@ function deleteEvent($this, event) {
                 }
                 else
                 {
+                    /////////////////////////////////////////////////////////////////////////////////////////////////////////
+                    //                                          The Line Container                                         //
+                    /////////////////////////////////////////////////////////////////////////////////////////////////////////
+                    
                     log('Not a text');
                     if(keyPressed == 'BACKSPACE')
                     {
@@ -616,7 +628,7 @@ function deleteEvent($this, event) {
                             mergeTwoLineContainer(endNode, focusedLineContainer.previousSibling, 'lastChild');
                         }
                         else {
-                            if(endAt == 1 && endNode.firstChild.nodeType != Node.TEXT_NODE && endNode.childNodes.length == 1)
+                            if(endAt == 1 && endNode.firstChild.nodeType != Node.TEXT_NODE && sizeChilds == 1)
                             {
                                 event.preventDefault();
                                 endNode.appendChild(document.createElement('br'));
@@ -631,10 +643,7 @@ function deleteEvent($this, event) {
                                     currentNode.nextSibling.nodeType == Node.TEXT_NODE)
                                 {
                                     event.preventDefault();
-                                    let length = currentNode.previousSibling.textContent.length;
-                                    currentNode.previousSibling.textContent += currentNode.nextSibling.textContent;
-                                    selection.setPosition(currentNode.previousSibling, length);
-                                    currentNode.nextSibling.remove();
+                                    mergeTwoTexts(currentNode.previousSibling, currentNode.nextSibling);
                                     currentNode.remove();
                                 }
                             }
@@ -642,63 +651,46 @@ function deleteEvent($this, event) {
                     }
                     else
                     {
-                        if(endAt == endNode.childNodes.length)
+                        if(endAt == sizeChilds)
                         {
                             event.preventDefault();
                             mergeTwoLineContainer(endNode, focusedLineContainer.nextSibling, 'firstChild');
                         }
                         else
                         {
-                            if(endAt == 0 && endNode.firstChild.nodeType != Node.TEXT_NODE && endNode.childNodes.length == 1)
+                            if(endAt == 0 && endNode.firstChild.nodeType != Node.TEXT_NODE && sizeChilds == 1)
                             {
                                 event.preventDefault();
                                 endNode.appendChild(document.createElement('br'));
                                 endNode.firstChild.remove();
+                            }
+                            else
+                            {
+                                let currentNode = endNode.childNodes.item(endAt);
+                                if(currentNode.previousSibling && 
+                                    currentNode.nextSibling &&
+                                    currentNode.previousSibling.nodeType == Node.TEXT_NODE &&  
+                                    currentNode.nextSibling.nodeType == Node.TEXT_NODE)
+                                {
+                                    event.preventDefault();
+                                    mergeTwoTexts(currentNode.previousSibling, currentNode.nextSibling);
+                                    currentNode.remove();
+                                }
                             }
                         }
                     }
                 }
             }
         }
+        else
+        {
+            log('There is a selection');
+            
+        }
     }
 }
 
 
-
-
-/*
-    // TODO Create a function to merge two lines container
-                                if(focusedLineContainer.firstChild == endNode && !isFirstChild){
-                                    // NOTE  : Same concept with code 100
-                                    if(previousLineContainer.lastChild.nodeType == Node.TEXT_NODE){
-                                        let length = previousLineContainer.lastChild.textContent.length;
-                                        previousLineContainer.lastChild.textContent += endNode.textContent;
-                                        selection.setPosition(previousLineContainer.lastChild, length);
-                                    }
-                                    else{
-                                        selection.setPosition(previousLineContainer, previousLineContainer.childNodes.length);
-                                        previousLineContainer.appendChild(endNode.cloneNode());
-                                    }
-                                    
-                                    while (endNode.nextSibling)
-                                        previousLineContainer.appendChild(endNode.nextSibling);
-                                    
-                                    focusedLineContainer.remove();
-                                }
-                                else{
-                                    // NOTE  : Same concept with code 100
-                                    if(endNode.previousSibling) {
-                                        endNode.previousSibling.remove();
-                                        let prevNode = endNode.previousSibling;
-                                        if(prevNode && prevNode.nodeType == Node.TEXT_NODE){
-                                            let length = prevNode.textContent.length;
-                                            prevNode.textContent += endNode.textContent;
-                                            selection.setPosition(prevNode, length);
-                                            endNode.remove();
-                                        }
-                                    }
-                                }
-*/
 
 
 /////////////////////////////////////////////////////////////////////////////////////////////
