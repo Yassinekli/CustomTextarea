@@ -234,40 +234,6 @@ function newLineEvent($this) {
         endNode = selection.focusNode;
     }
 
-    // Delete the selected content.
-    function deleteSelectedContent(node, startOffSet, endOffSet) {
-        let lineContainer = node;
-        
-        if(startOffSet > endOffSet) {
-            let tmp = endOffSet;
-            endOffSet = startOffSet;
-            startOffSet = tmp;
-        }
-
-        if(node.nodeType == Node.TEXT_NODE)
-        { 
-            lineContainer = node.parentNode;
-            if(startOffSet == 0 && node.textContent.length == endOffSet)
-                node.remove();
-            else
-            {
-                range.setStart(node, startOffSet);
-                range.setEnd(node, endOffSet);
-                range.deleteContents();
-            }
-            if(lineContainer.childNodes.length == 0)
-                lineContainer.appendChild(document.createElement('br'));
-            return;
-        }
-        
-        range.setStart(node, startOffSet);
-        range.setEnd(node, endOffSet);
-        range.deleteContents();
-
-        if(lineContainer.childNodes.length == 0)
-            lineContainer.appendChild(document.createElement('br'));
-    }
-
     function firstNode(lineContainerChilds, anchorNode, focusNode) {
         for (let i = 0; i < lineContainerChilds.length; i++) {
             if(lineContainerChilds.item(i) === anchorNode) { anchorNode.index = i; return anchorNode; };
@@ -419,7 +385,6 @@ function deleteEvent($this, event) {
     let nextLineContainer = focusedLineContainer.nextSibling;
     let isFirstChild = focusedLineContainer == $this.firstChild;*/
     let sizeChilds = focusedLineContainer.childNodes.length;
-    let isEmpty = (sizeChilds == 1 && focusedLineContainer.firstChild.nodeName.toUpperCase() == "BR");
     
 
     ////////////////////////////////////////////////////////////////////
@@ -427,6 +392,10 @@ function deleteEvent($this, event) {
     //////////      Functions to call
     //////////
     ////////////////////////////////////////////////////////////////////
+
+    function isEmpty(sizeChildren, currentLineContainer) {
+        return (sizeChildren == 1 && currentLineContainer.firstChild.nodeName.toUpperCase() == "BR");
+    }
 
     function deleteEmptyLineContainer(currentLineContainer, siblingLineContainer, detectiveChild) {
         if(siblingLineContainer) {
@@ -496,16 +465,21 @@ function deleteEvent($this, event) {
             {
                 log("the detected child of siblingLineContainer is not a text")
                 let parentNode = getParentNode(currentNode);
+                let length = siblingLineContainer.childNodes.length;
+                let emtpy = isEmpty(length, siblingLineContainer);
                 if(keyPressed == "BACKSPACE"){
-                    selection.setPosition(siblingLineContainer, siblingLineContainer.childNodes.length);
+                    if(emtpy){ siblingLineContainer.remove(); return; }
+
                     let firstNode = parentNode.firstChild;
                     siblingLineContainer.appendChild(firstNode.cloneNode());
                     while (firstNode.nextSibling) 
                         siblingLineContainer.appendChild(firstNode.nextSibling);
-                    currentNode.remove();
+                    selection.setPosition(siblingLineContainer, length);
+                    parentNode.remove();
                 }
                 else
                 {
+                    if(emtpy){ siblingLineContainer.remove(); return; }
                     if(currentNode == parentNode)
                         selection.setPosition(currentNode, currentNode.childNodes.length);
                     else
@@ -537,7 +511,7 @@ function deleteEvent($this, event) {
         if(startNode == endNode && startAt == endAt)
         {
             log('No Selection');
-            if(isEmpty) {
+            if(isEmpty(sizeChilds, focusedLineContainer)) {
                 /////////////////////////////////////////////////////////////////////////////////////////////////////////
                 //                                       Empty Line Container                                          //
                 /////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -685,7 +659,17 @@ function deleteEvent($this, event) {
         else
         {
             log('There is a selection');
-            
+            if(startNode == endNode)
+            {
+                log('Same Node');
+                event.preventDefault();
+                deleteSelectedContent(endNode, startAt, endAt);
+                /*selection.setPosition();*/
+            }
+            else
+            {
+                log('Not Same Node')
+            }
         }
     }
 }
@@ -713,4 +697,39 @@ function getParentNode(node) {
     if(node.nodeType == Node.TEXT_NODE)
         return node.parentNode;
     return node;
+}
+
+// Delete the selected content.
+function deleteSelectedContent(node, startOffSet, endOffSet) {
+    let range = document.createRange();
+    let lineContainer = node;
+    
+    if(startOffSet > endOffSet) {
+        let tmp = endOffSet;
+        endOffSet = startOffSet;
+        startOffSet = tmp;
+    }
+
+    if(node.nodeType == Node.TEXT_NODE)
+    { 
+        lineContainer = node.parentNode;
+        if(startOffSet == 0 && node.textContent.length == endOffSet)
+            node.remove();
+        else
+        {
+            range.setStart(node, startOffSet);
+            range.setEnd(node, endOffSet);
+            range.deleteContents();
+        }
+        if(lineContainer.childNodes.length == 0)
+            lineContainer.appendChild(document.createElement('br'));
+        return;
+    }
+    
+    range.setStart(node, startOffSet);
+    range.setEnd(node, endOffSet);
+    range.deleteContents();
+
+    if(lineContainer.childNodes.length == 0)
+        lineContainer.appendChild(document.createElement('br'));
 }
