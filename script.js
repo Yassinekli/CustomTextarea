@@ -487,7 +487,7 @@ function deleteEvent($this, event) {
                     let firstNode = siblingLineContainer.firstChild;
                     parentNode.appendChild(firstNode.cloneNode());
                     while (firstNode.nextSibling) 
-                        currentNode.appendChild(firstNode.nextSibling);
+                        parentNode.appendChild(firstNode.nextSibling);
                     siblingLineContainer.remove();
                 }
             }
@@ -664,11 +664,12 @@ function deleteEvent($this, event) {
                 log('Same Node');
                 event.preventDefault();
                 deleteSelectedContent(endNode, startAt, endAt);
-                /*selection.setPosition();*/
+                selection.setPosition(endNode, (startAt < endAt) ? startAt : endAt);
             }
             else
             {
                 log('Not Same Node')
+                
             }
         }
     }
