@@ -321,12 +321,17 @@ function newLineEvent($this) {
         log('----- Multi line containers selected -----');
         
         // Delete line containers between the first selected line container and the last selected line container.
+        if(startNode.nodeType === Node.TEXT_NODE)
+            startNode = startNode.parentNode;
+        if(endNode.nodeType === Node.TEXT_NODE)
+            endNode = endNode.parentNode;
+
         startNode = firstNode($this.childNodes, startNode, endNode);
         endNode = secondNode(startNode, { anchorNode:getParentNode(selection.anchorNode) , focusNode:getParentNode(selection.focusNode) });
         while (startNode.nextSibling !== endNode)
             startNode.nextSibling.remove();
-
-        // Reset startNode and endNode objects to the origin selected nodes. 
+        
+        // Reset startNode and endNode objects to the origin selected nodes.
         if(getParentNode(selection.anchorNode) == startNode) {
             startNode = selection.anchorNode;
             endNode = secondNode(startNode, { anchorNode:selection.anchorNode , focusNode:selection.focusNode });
