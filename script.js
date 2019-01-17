@@ -707,6 +707,7 @@ function deleteEvent($this, event) {
                     }
                     else
                     {
+                        // Wet Code 
                         (startNode.parentNode) 
                             ? selection.setPosition(startNode, startNode.startAt)
                             : selection.setPosition(focusedLineContainer, startNode.index);
@@ -721,12 +722,20 @@ function deleteEvent($this, event) {
                         for (let j = startNode.index+1; j < endNode.endAt; j++)
                             startNode.nextSibling.remove();
                         deleteSelectedContent(startNode, startNode.startAt, startNode.textContent.length);
+                        // Wet Code 
+                        (startNode.parentNode) 
+                            ? selection.setPosition(startNode, startNode.startAt)
+                            : selection.setPosition(focusedLineContainer, startNode.index);
                     }
                     else
                     {
                         for (let j = startNode.index; j > endNode.endAt; j--)
                             startNode.previousSibling.remove();
                         deleteSelectedContent(startNode, 0, startNode.startAt);
+                        // Wet Code 
+                        (startNode.parentNode) 
+                            ? selection.setPosition(startNode, 0)
+                            : selection.setPosition(focusedLineContainer, endNode.endAt);
                     }
                 }
             }
