@@ -234,27 +234,6 @@ function newLineEvent($this) {
         endNode = selection.focusNode;
     }
 
-    function firstNode(lineContainerChilds, anchorNode, focusNode) {
-        for (let i = 0; i < lineContainerChilds.length; i++) {
-            if(lineContainerChilds.item(i) === anchorNode) { anchorNode.index = i; return anchorNode; };
-            if(lineContainerChilds.item(i) === focusNode) { focusNode.index = i; return focusNode; };
-        }
-    }
-
-    function secondNode(node, compareWith) {
-        if(node == compareWith.anchorNode)
-        {
-            node.startAt = startAt;
-            compareWith.focusNode.startAt = 0;
-            compareWith.focusNode.endAt = endAt;
-            return compareWith.focusNode;
-        }
-        node.startAt = endAt;
-        compareWith.anchorNode.startAt = 0;
-        compareWith.anchorNode.endAt = startAt;
-        return compareWith.anchorNode;
-    }
-
 
     if(handlingSingleLine(selection) == 1){
         log('----- Single line container -----');
@@ -277,7 +256,7 @@ function newLineEvent($this) {
             // Find the first text node in the selected line container.
             startNode = firstNode(getParentNode(startNode).childNodes, startNode, endNode);
             // Get the second selected node. (It could a text node or the line container)
-            endNode = secondNode(startNode, { anchorNode: selection.anchorNode, focusNode: selection.focusNode });
+            endNode = secondNode(startNode, { anchorNode: selection.anchorNode, focusNode: selection.focusNode }, startAt, endAt);
             // Check if it is a text node.
             if(endNode.nodeType == Node.TEXT_NODE)
             {
@@ -327,18 +306,18 @@ function newLineEvent($this) {
             endNode = endNode.parentNode;
 
         startNode = firstNode($this.childNodes, startNode, endNode);
-        endNode = secondNode(startNode, { anchorNode:getParentNode(selection.anchorNode) , focusNode:getParentNode(selection.focusNode) });
+        endNode = secondNode(startNode, { anchorNode:getParentNode(selection.anchorNode) , focusNode:getParentNode(selection.focusNode) }, startAt, endAt);
         while (startNode.nextSibling !== endNode)
             startNode.nextSibling.remove();
         
         // Reset startNode and endNode objects to the origin selected nodes.
         if(getParentNode(selection.anchorNode) == startNode) {
             startNode = selection.anchorNode;
-            endNode = secondNode(startNode, { anchorNode:selection.anchorNode , focusNode:selection.focusNode });
+            endNode = secondNode(startNode, { anchorNode:selection.anchorNode , focusNode:selection.focusNode }, startAt, endAt);
         }
         else {
             startNode = selection.focusNode;
-            endNode = secondNode(startNode, { anchorNode:selection.anchorNode , focusNode:selection.focusNode });
+            endNode = secondNode(startNode, { anchorNode:selection.anchorNode , focusNode:selection.focusNode }, startAt, endAt);
         }
         
         // Delete content of the first selected line container.
@@ -368,6 +347,10 @@ function newLineEvent($this) {
             selection.setPosition(lineContainer, 0);
     }
 }
+
+
+
+
 
 // DELETE EVENT
 function deleteEvent($this, event) {
@@ -667,14 +650,85 @@ function deleteEvent($this, event) {
             if(startNode == endNode)
             {
                 log('Same Node');
+                
                 event.preventDefault();
+                if(startNode.nodeType == Node.TEXT_NODE)
+                {
+                    deleteSelectedContent(endNode, startAt, endAt);
+                    selection.setPosition(endNode, (startAt < endAt) ? startAt : endAt);
+                    return;
+                }
+                
+                if(startAt > endAt) {
+                    let tmp = endAt;
+                    endAt = startAt;
+                    startAt = tmp;
+                }
+                
+                let prevNode = focusedLineContainer.childNodes.item(startAt - 1);
+                let nextNode = focusedLineContainer.childNodes.item(endAt);
+                
                 deleteSelectedContent(endNode, startAt, endAt);
-                selection.setPosition(endNode, (startAt < endAt) ? startAt : endAt);
+                if(prevNode 
+                    && nextNode 
+                    && prevNode.nodeType == Node.TEXT_NODE 
+                    && nextNode.nodeType == Node.TEXT_NODE)
+                {
+                    let length = prevNode.textContent.length;
+                    prevNode.textContent += nextNode.textContent;
+                    selection.setPosition(prevNode, length);
+                    nextNode.remove();
+                    return;
+                }
+                
+                selection.setPosition(endNode, startAt);
             }
             else
             {
                 log('Not Same Node')
+                event.preventDefault();
                 
+                startNode = firstNode(focusedLineContainer.childNodes, startNode, endNode);
+                endNode = secondNode(startNode, { anchorNode: selection.anchorNode , focusNode: selection.focusNode }, startAt, endAt);
+                
+                if(endNode.nodeType == Node.TEXT_NODE)
+                {
+                    log('User selected from a text node to a text node');
+                    // Start to delete the line container's children between the first selected text node and the second selected text node.
+                    while(startNode.nextSibling != endNode)
+                        startNode.nextSibling.remove();
+                    // Delete the selected content from the bothtext node.
+                    deleteSelectedContent(startNode, startNode.startAt, startNode.textContent.length);
+                    deleteSelectedContent(endNode, endNode.startAt, endNode.endAt);
+                }
+                else
+                {
+                    log('User selected from a line container node to a text node');
+                }
+                /*// If the second selected node is not a text node.
+                else
+                {
+                    // If the first text node's position is less than the last set of mouse selection.
+                    if(startNode.index < endNode.endAt)
+                    {
+                        // Delete all the line container's children between the position of the first selected text node and the position of last set of mouse selection.
+                        for (let j = startNode.index+1; j < endNode.endAt; j++)
+                            startNode.nextSibling.remove();
+                        deleteSelectedContent(startNode, startNode.startAt, startNode.textContent.length);
+                        resetSelection();
+                        breakNewLine();
+                    }
+                    // If the first text node's position was greater than the last set of mouse selection.
+                    else
+                    {
+                        // Delete all the line container's children between the position of the first selected text node and the position of last set of mouse selection.
+                        for (let j = startNode.index; j > endNode.endAt; j--)
+                            startNode.previousSibling.remove();
+                        deleteSelectedContent(startNode, 0, startNode.startAt);
+                        resetSelection();
+                        breakNewLine();
+                    }
+                }*/
             }
         }
     }
@@ -738,4 +792,26 @@ function deleteSelectedContent(node, startOffSet, endOffSet) {
 
     if(lineContainer.childNodes.length == 0)
         lineContainer.appendChild(document.createElement('br'));
+}
+
+
+function firstNode(lineContainerChilds, anchorNode, focusNode) {
+    for (let i = 0; i < lineContainerChilds.length; i++) {
+        if(lineContainerChilds.item(i) === anchorNode) { anchorNode.index = i; return anchorNode; };
+        if(lineContainerChilds.item(i) === focusNode) { focusNode.index = i; return focusNode; };
+    }
+}
+
+function secondNode(node, compareWith, startAt, endAt) {
+    if(node == compareWith.anchorNode)
+    {
+        node.startAt = startAt;
+        compareWith.focusNode.startAt = 0;
+        compareWith.focusNode.endAt = endAt;
+        return compareWith.focusNode;
+    }
+    node.startAt = endAt;
+    compareWith.anchorNode.startAt = 0;
+    compareWith.anchorNode.endAt = startAt;
+    return compareWith.anchorNode;
 }
