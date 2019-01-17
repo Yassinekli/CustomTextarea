@@ -694,41 +694,41 @@ function deleteEvent($this, event) {
                 if(endNode.nodeType == Node.TEXT_NODE)
                 {
                     log('User selected from a text node to a text node');
-                    // Start to delete the line container's children between the first selected text node and the second selected text node.
                     while(startNode.nextSibling != endNode)
                         startNode.nextSibling.remove();
-                    // Delete the selected content from the bothtext node.
                     deleteSelectedContent(startNode, startNode.startAt, startNode.textContent.length);
                     deleteSelectedContent(endNode, endNode.startAt, endNode.endAt);
+                    if(startNode.parentNode && endNode.parentNode)
+                    {
+                        let length = startNode.textContent.length;
+                        startNode.textContent += endNode.textContent;
+                        endNode.remove();
+                        selection.setPosition(startNode, length);
+                    }
+                    else
+                    {
+                        (startNode.parentNode) 
+                            ? selection.setPosition(startNode, startNode.startAt)
+                            : selection.setPosition(focusedLineContainer, startNode.index);
+                    }
                 }
                 else
                 {
                     log('User selected from a line container node to a text node');
-                }
-                /*// If the second selected node is not a text node.
-                else
-                {
-                    // If the first text node's position is less than the last set of mouse selection.
+                    
                     if(startNode.index < endNode.endAt)
                     {
-                        // Delete all the line container's children between the position of the first selected text node and the position of last set of mouse selection.
                         for (let j = startNode.index+1; j < endNode.endAt; j++)
                             startNode.nextSibling.remove();
                         deleteSelectedContent(startNode, startNode.startAt, startNode.textContent.length);
-                        resetSelection();
-                        breakNewLine();
                     }
-                    // If the first text node's position was greater than the last set of mouse selection.
                     else
                     {
-                        // Delete all the line container's children between the position of the first selected text node and the position of last set of mouse selection.
                         for (let j = startNode.index; j > endNode.endAt; j--)
                             startNode.previousSibling.remove();
                         deleteSelectedContent(startNode, 0, startNode.startAt);
-                        resetSelection();
-                        breakNewLine();
                     }
-                }*/
+                }
             }
         }
     }
