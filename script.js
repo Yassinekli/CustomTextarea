@@ -89,8 +89,17 @@ textarea.onkeydown = textarea2.onkeydown = function(event) {
         {
             deleteEvent(this, event);
         }
-        if(event.key === 'Enter')
-            event.preventDefault();
+        else
+        {
+            if(event.key == " "){
+                // FIXME 
+                textarea.childNodes.item(0).childNodes.item(0).textContent += "\u202F";
+                window.getSelection().setPosition(textarea.childNodes.item(0).childNodes.item(0), textarea.childNodes.item(0).childNodes.item(0).textContent.length)
+                event.preventDefault();
+            }
+            if(event.key === 'Enter')
+                event.preventDefault();
+        }
     }
 };
 
