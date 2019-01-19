@@ -722,6 +722,12 @@ function deleteEvent($this, event) {
                         for (let j = startNode.index+1; j < endNode.endAt; j++)
                             startNode.nextSibling.remove();
                         deleteSelectedContent(startNode, startNode.startAt, startNode.textContent.length);
+                        if(startNode.parentNode && startNode.nextSibling && startNode.nextSibling.nodeType == Node.TEXT_NODE)
+                        {
+                            let nextNode = startNode.nextSibling;
+                            startNode.textContent += nextNode.textContent;
+                            nextNode.remove();
+                        }
                         // Wet Code 
                         (startNode.parentNode) 
                             ? selection.setPosition(startNode, startNode.startAt)
@@ -732,10 +738,21 @@ function deleteEvent($this, event) {
                         for (let j = startNode.index; j > endNode.endAt; j--)
                             startNode.previousSibling.remove();
                         deleteSelectedContent(startNode, 0, startNode.startAt);
-                        // Wet Code 
-                        (startNode.parentNode) 
-                            ? selection.setPosition(startNode, 0)
-                            : selection.setPosition(focusedLineContainer, endNode.endAt);
+                        if(startNode.parentNode && startNode.previousSibling && startNode.previousSibling.nodeType == Node.TEXT_NODE)
+                        {
+                            let prevNode = startNode.previousSibling;
+                            let length = prevNode.textContent.length;
+                            prevNode.textContent += startNode.textContent;
+                            startNode.remove();
+                            selection.setPosition(prevNode, length);
+                        }
+                        else
+                        {
+                            // Wet Code 
+                            (startNode.parentNode) 
+                                ? selection.setPosition(startNode, 0)
+                                : selection.setPosition(focusedLineContainer, endNode.endAt);
+                        }
                     }
                 }
             }
@@ -802,7 +819,6 @@ function deleteSelectedContent(node, startOffSet, endOffSet) {
     if(lineContainer.childNodes.length == 0)
         lineContainer.appendChild(document.createElement('br'));
 }
-
 
 function firstNode(lineContainerChilds, anchorNode, focusNode) {
     for (let i = 0; i < lineContainerChilds.length; i++) {
