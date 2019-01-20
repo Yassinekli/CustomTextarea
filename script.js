@@ -92,9 +92,10 @@ textarea.onkeydown = textarea2.onkeydown = function(event) {
         else
         {
             if(event.key == " "){
-                // FIXME 
+                // TODO 
                 textarea.childNodes.item(0).childNodes.item(0).textContent += "\u202F";
-                window.getSelection().setPosition(textarea.childNodes.item(0).childNodes.item(0), textarea.childNodes.item(0).childNodes.item(0).textContent.length)
+                window.getSelection().setPosition(textarea.childNodes.item(0).childNodes.item(0), 
+                            textarea.childNodes.item(0).childNodes.item(0).textContent.length)
                 event.preventDefault();
             }
             if(event.key === 'Enter')
@@ -766,6 +767,62 @@ function deleteEvent($this, event) {
                 }
             }
         }
+    }
+    else
+    {
+        log('----- Multi line containers selected -----');
+        
+        event.preventDefault();
+        // Delete line containers between the first selected line container and the last selected line container.
+        if(startNode.nodeType === Node.TEXT_NODE)
+            startNode = startNode.parentNode;
+        if(endNode.nodeType === Node.TEXT_NODE)
+            endNode = endNode.parentNode;
+
+        startNode = firstNode($this.childNodes, startNode, endNode);
+        endNode = secondNode(startNode, { anchorNode:getParentNode(selection.anchorNode) 
+                                        , focusNode:getParentNode(selection.focusNode) }
+                                        , startAt, endAt);
+        while (startNode.nextSibling !== endNode)
+            startNode.nextSibling.remove();
+        
+        // Reset startNode and endNode objects to the origin selected nodes.
+        if(getParentNode(selection.anchorNode) == startNode) {
+            startNode = selection.anchorNode;
+            endNode = secondNode(startNode, { anchorNode:selection.anchorNode , focusNode:selection.focusNode }, startAt, endAt);
+        }
+        else {
+            startNode = selection.focusNode;
+            endNode = secondNode(startNode, { anchorNode:selection.anchorNode , focusNode:selection.focusNode }, startAt, endAt);
+        }
+        
+        // Delete content of the first selected line container.
+        if(startNode.nodeType == Node.TEXT_NODE) {
+            while(startNode.nextSibling)
+                startNode.nextSibling.remove();
+            deleteSelectedContent(startNode, startNode.startAt, startNode.textContent.length);
+        }
+        else
+            deleteSelectedContent(startNode, startNode.startAt, startNode.childNodes.length);
+
+        let lineContainer = endNode;
+
+        // Delete content of the second selected line container.
+        if(endNode.nodeType == Node.TEXT_NODE){
+            while(endNode.previousSibling)
+                endNode.previousSibling.remove();
+            lineContainer = endNode.parentNode;
+        }
+
+        deleteSelectedContent(endNode, 0, endNode.endAt);
+
+        mergeTwoLineContainer();
+
+        // Make focus on the appropriate node.
+        /* if(lineContainer.firstChild.nodeType == Node.TEXT_NODE)
+            selection.setPosition(lineContainer.firstChild, 0);
+        else
+            selection.setPosition(lineContainer, 0); */
     }
 }
 
